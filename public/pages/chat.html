@@ -40,6 +40,8 @@
     // We have to do this check because the client variable isn't being destroyed once the user goes back to the home page
     if(!client){
         var client = io()
+        var recorder
+        var chunks = []
     }else {
         client = io()
     }
@@ -104,9 +106,6 @@
         // clear the message input field
         messageField.prop('value', '')
     }
-
-    let recorder
-    let chunks = []
 
     function handleStartRecord(evt){
 
