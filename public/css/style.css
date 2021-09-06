@@ -1,0 +1,145 @@
+body{
+    margin: 0px;
+    padding: 10px;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgb(34, 34, 34);
+    color: white;
+    overflow-y: hidden;
+    overflow-x: hidden;
+}
+
+.panel{
+    overflow-y: auto;
+    animation: slideIn 0.5s;
+}
+
+.menu-btn{
+    min-width: 250px;
+}
+
+#chat-content{
+    padding: 15px;
+    border-radius: 30px;
+    overflow-y: auto;
+    margin-top: 100px;
+    height: calc(100vh - 175px);
+    opacity: 1.0;
+}
+
+.chat-bubble{
+    font-size: 12px;
+    margin-bottom: 10px;
+    text-align: justify;
+    color: white;
+    background-color: transparent;
+    border: 1px solid rgb(255, 216, 108);
+    border-radius: 10px;
+    padding: 10px;
+    max-width: 350px;
+    width: fit-content;
+    margin-left: auto;
+    animation: fadeIn 0.75s;
+}
+
+.chat-bubble.other{
+    margin-left: 0px;
+    border-color: rgb(0, 110, 255);
+}
+
+@keyframes fadeIn {
+    from{
+        opacity: 0.0;
+    }
+    to{
+        opacity: 1.0;
+    }
+}
+
+.chat-date{
+    font-size: 8px;
+    text-align: right;
+    margin-left: auto;
+    margin-top: auto;
+    margin-bottom: auto;
+    display: inline-block;
+    color: rgb(192, 192, 192);
+}
+
+#chat-input{
+    background-color: rgb(34, 34, 34);
+    position: fixed;
+    width: 100%;
+    height: 50px;
+    padding: 10px 10px;
+    left: 0px;
+    bottom: 0px;
+}
+
+.chat-notification{
+    width: 100%;
+    padding: 5px;
+    font-size: 12px;
+    margin-bottom: 10px;
+    text-align: center;
+    border: 1px solid rgba(128, 128, 128, 0.226);
+    border-radius: 0px;
+}
+
+@keyframes slideIn{
+    from{
+        margin-top: 50vh;
+        opacity: 0.0;
+    }
+    to{
+        margin-top: 0vh;
+        opacity: 1.0;
+    }
+}
+
+@media (min-width:600px){
+
+    body{
+        text-align: center;
+        background-color: white;
+        padding: 0px;
+    }
+
+    .panel{
+        border: 2px solid black;
+        margin-left: auto;
+        margin-right: auto;
+        width: 500px;
+        height: 100vh;
+        background-color: rgb(34, 34, 34);
+    }
+
+    #chat-input{
+        margin-left: auto;
+        margin-right: auto;
+        left: auto;
+        width: 500px;
+    }
+
+    .chat-header{
+        position: fixed;
+        margin-left: auto;
+        margin-right: auto;
+        left: 0px;
+        width: 500px;
+    }
+}
+
+.debug{
+    border: 1px solid red;
+}
+
+.btn-sm{
+    width: 70px;
+}
+
+.middle-right{
+    margin-left: auto; 
+    margin-top: auto; 
+    margin-bottom: auto;
+}

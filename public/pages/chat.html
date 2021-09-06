@@ -1,0 +1,280 @@
+<div class="panel">
+    <div class="card-header text-left fixed-top chat-header">
+        <h5 class="mb-2">Conversar</h5>
+        <div class="container">
+            <div class="row">
+                <div>
+                    <button id="previous-button" class="btn btn-sm btn-outline-danger" onclick="handlePrevious(event)" type="button">Sair</button>
+                </div>
+                <div class="middle-right">
+                    <button id="next-button" class="btn btn-sm btn-outline-primary" onclick="handleNext(event)">Próximo</button>
+                </div>
+            </div>
+        </div>
+        <small class="text-warning" id="status-text"></small>
+    </div>
+
+    <div id="chat-content">        
+    </div>
+    <div id="chat-input" class="mb-2">
+        <form id="message-form" class="input-group" onsubmit="handleSend(event)" autocomplete="off">
+            <input type="text" autocomplete="off" hidden>
+            <div class="input-group-prepend">
+                <button type="button" id="audio-button" class="btn btn-outline-info" onclick="handleStartRecord(event)">
+                    <img src="../img/mic-icon.png" alt="mic" width="20px" height="20px">
+                    <span id="audio-text">Audio</span>
+                </button>
+            </div>
+            <input required autofill="false" class="form-control" type="text" id="message-input"
+                placeholder="Escrever...">
+            <div class="input-group-append">
+                <button class="btn btn-outline-success" id="send-button">Enviar</button>
+            </div>
+        </form>
+
+    </div>
+</div>
+
+<script>
+
+    // We have to do this check because the client variable isn't being destroyed once the user goes back to the home page
+    if(!client){
+        var client = io()
+    }else {
+        client = io()
+    }
+
+    $('#next-button').hide()
+    $('#chat-input').hide()
+
+    $('#status-text').html('Connectando...')
+
+    client.on('connect', () => {
+        $('#status-text').html('Procurando Conversa...')
+        console.log('Connected to server')
+    })
+
+    // NOTE: For these events, nothing functional should happen other than UI updates and notifications
+    client.on('chat-message', message => {
+        const bubble = ChatBubble(message.text, message.date, true)
+        AddChatBubble(bubble)
+    })
+
+    client.on('chat-audio', ({audioData, date}) => {
+        console.log(audioData)
+        const audioUrl = createAudio(audioData)
+        const bubble = AudioBubble(audioUrl, date, true)
+        AddChatBubble(bubble)
+    })
+
+    client.on('peer-found', () => {
+        $('#status-text').html('')
+        $('#chat-content').html('')
+        $('#chat-input').show()
+        $('#next-button').show()
+        AddChatBubble(NotificationBubble('Conversa iniciado com incógnito, diga qualquer coisa'))
+        console.log('Peer Found')
+    })
+
+    client.on('peer-abandoned', () => {
+        $('#chat-input').hide()
+        AddChatBubble(NotificationBubble('incógnito saiu da conversa, clique em próximo para iniciar uma nova conversa', 'secondary'))
+        console.log('Peer Skipped')
+    })
+
+    client.on('peer-lost', () => {
+        $('#chat-input').hide()
+        AddChatBubble(NotificationBubble('Conexão a incógnito perdida, clique em próximo para iniciar uma nova conversa', 'danger'))
+        console.log('Peer Disconnected')
+    })
+
+    function handleSend(evt) {
+
+        // Prevents the default handler event
+        evt.preventDefault()
+
+        const messageField = $('#message-input')
+        let text = messageField.prop('value')
+
+        client.emit('chat-message', text) // NOTE: Server will sanitize the text, no need to send it sanitized
+
+        const bubble = ChatBubble(sanitize(text), "Just now")
+        AddChatBubble(bubble)
+
+        // clear the message input field
+        messageField.prop('value', '')
+    }
+
+    let recorder
+    let chunks = []
+
+    function handleStartRecord(evt){
+        alert('Recording Started')
+
+        if(isRecordingSupported()){
+
+            // Morpth the input form to show recording audio state
+
+            $('#audio-button').prop('class', 'btn btn-outline-danger')
+            document.getElementById('audio-button').onclick = (handleCancelRecord)
+            $('#audio-text').html('Cancelar')
+
+            $('#message-input').prop('value', 'Gravando audio...')
+            $('#message-input').prop('disabled', true)
+            $('#send-button').prop('class',"btn btn-warning")
+            document.getElementById('message-form').onsubmit = (handleSendAudio)
+            
+            createRecorder((audioRecorder) => {
+                
+                // set current recorder
+                recorder = audioRecorder
+
+                // start recording
+                recorder.start()
+
+                // Clear data from previous recording
+                chunks = []
+
+                // Collect data as its being recorded
+                recorder.ondataavailable = function(e) {
+                   chunks.push(e.data);
+                }
+            })
+            
+        }else{
+            alert('Recording not supported')
+        }
+    }
+
+    function isRecordingSupported(){
+        return navigator.mediaDevices && navigator.mediaDevices.getUserMedia
+    }
+
+    function createRecorder(callback){
+        navigator.mediaDevices.getUserMedia({audio : true})
+            .then(stream => {
+
+                const r = new MediaRecorder(stream)
+                callback(r)
+
+            })
+            .catch((err) => {
+                alert(err)
+            })
+    }
+
+    function createAudio(chunks){
+        const blob = new Blob(chunks, {'type' : 'audio/ogg; codecs=opus'})
+        const url = window.URL.createObjectURL(blob)
+        return url
+    }
+
+    function handleSendAudio(evt) {
+
+        evt.preventDefault()
+
+        recorder.onstop = (e) => {
+            const audioUrl = createAudio(chunks)
+            AddChatBubble(AudioBubble(audioUrl, "No date"))
+            client.emit('chat-audio', chunks)
+            chunks = []
+            console.log('Recording Finished, Message Sent')
+        }
+        
+        recorder.stop()
+
+        // Morpth the input form to normal state
+
+        $('#audio-button').prop('class', 'btn btn-outline-info')
+        document.getElementById('audio-button').onclick = (handleStartRecord)
+        $('#audio-text').html('Audio')
+
+        $('#message-input').prop('value', '')
+        $('#message-input').prop('disabled', false)
+        $('#send-button').prop('class',"btn btn-outline-success")
+        document.getElementById('message-form').onsubmit = (handleSend)
+
+
+        // console.log('Recording finished')
+    }
+
+    function handleCancelRecord(evt){
+        
+        recorder.stop()
+
+        // Morpth the input form to normal state
+
+        $('#audio-text').html('Audio')
+        $('#audio-button').prop('class', 'btn btn-outline-info')
+        document.getElementById('audio-button').onclick = (handleStartRecord)
+        
+        $('#message-input').prop('value', '')
+        $('#message-input').prop('disabled', false)
+        $('#send-button').prop('class',"btn btn-outline-success")
+        document.getElementById('message-form').onsubmit = (handleSend)
+
+        // console.log('Recording Canceled')
+
+    }
+
+    function handleNext(evt) {
+        evt.preventDefault()
+        $('#chat-content').html('')
+        $('#status-text').html('Procurando Conversa...')
+        $('#next-button').hide()
+        $('#chat-input').hide()
+        client.emit('next-peer')
+    }
+
+    function handlePrevious(evt){
+        client.emit('abandon-peer')
+        client.disconnect()
+        view('home')
+    }
+
+    function AddChatBubble(bubble) {
+        const chatContainer = document.querySelector('#chat-content')
+        const element = document.createElement('div')
+        element.innerHTML = bubble
+        chatContainer.appendChild(element)
+        element.scrollIntoView()
+    }
+
+    function ChatBubble(text, date, isOther = false) {
+        const className = isOther ? 'chat-bubble other' : 'chat-bubble'
+        return `<div class='${className}'>
+            ${text}
+            <div class="chat-date">${date}</div>
+        </div>`
+    }
+
+    function NotificationBubble(text, type='info'){
+        return `<div class="text-${type} chat-notification">${text}</div>`
+    }
+
+    function AudioBubble(audioUrl, date, isOther=false){
+        const className = isOther ? 'chat-bubble other' : 'chat-bubble'
+        return (
+            `<div class="${className}">
+                <small class="badge badge-secondary">Audio</small>
+                <audio controls src="${audioUrl}"></audio>
+                <span class="chat-date">${date}</span>
+            </div>`
+            )
+    }
+
+    function sanitize(string) {
+        const map = {
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#x27;',
+            "/": '&#x2F;',
+        };
+
+        const reg = /[&<>"'/]/ig;
+        return string.replace(reg, (match) => (map[match]));
+    }
+
+</script>
