@@ -11,8 +11,17 @@ const app = express()
 const server = http.createServer(app)
 const io = new Server(server)
 
+function requireHTTPS(req, res, next) {
+    // The 'x-forwarded-proto' check is for Heroku
+    if (!req.secure && req.get('x-forwarded-proto') !== 'https' && process.env.NODE_ENV !== "development") {
+        return res.redirect('https://' + req.get('host') + req.url);
+    }
+    next();
+}
+
 // Setup middlewares
 app.use(morgan('dev'))
+app.use(requireHTTPS)
 app.use(express.urlencoded({extended:true}))
 app.use(cookiesParser('topsecretcookie'))
 app.use(express.static(path.join(__dirname,"public")))
