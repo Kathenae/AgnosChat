@@ -12,10 +12,12 @@ const server = http.createServer(app)
 const io = new Server(server)
 
 function requireHTTPS(req, res, next) {
+        
     // The 'x-forwarded-proto' check is for Heroku
-    if (!req.secure && req.get('x-forwarded-proto') !== 'https' && process.env.NODE_ENV !== "development") {
+    if (!req.secure && req.get('x-forwarded-proto') !== 'https' && process.env.NODE_ENV !== "development" && req.hostname != 'localhost' && req.method == 'GET') {
         return res.redirect('https://' + req.get('host') + req.url);
     }
+
     next();
 }
 
