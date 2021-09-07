@@ -88,6 +88,9 @@ io.on('connect', client => {
             client.peer.peer = null
             client.peer = null
         }
+
+        waitingUsers = waitingUsers.filter(u => u.id != client.id)
+
     })
 
     client.on('disconnect', () => {
@@ -99,7 +102,7 @@ io.on('connect', client => {
             client.peer = null
         }
 
-        waitingUsers = waitingUsers.filter(u => u != client)
+        waitingUsers = waitingUsers.filter(u => u.id != client.id)
 
     })
 })
