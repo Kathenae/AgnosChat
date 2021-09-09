@@ -22,12 +22,13 @@ function requireHTTPS(req, res, next) {
 }
 
 // Setup middlewares
-app.use(morgan('dev'))
+app.use(morgan('tiny'))
 app.use(requireHTTPS)
 app.use(express.urlencoded({extended:true}))
 app.use(cookiesParser('topsecretcookie'))
 app.use(express.static(path.join(__dirname,"public")))
 
+let clientCount = 0
 let waitingUsers = []
 
 app.get('/usersStatus', (req,res) => {
@@ -35,6 +36,9 @@ app.get('/usersStatus', (req,res) => {
 })
 
 io.on('connect', client => {
+
+    clientCount += 1
+    console.log(`[Socket.IO] User connected [${clientCount}]`)
 
     // Try pairing this user with the ones currently waiting
     tryPair(client)
@@ -75,6 +79,7 @@ io.on('connect', client => {
             client.peer.emit('peer-abandoned')
             client.peer.peer = null
             client.peer = null
+            console.log('[Socket.IO] User Abandoned peer')
         }
 
         // Try pairing this user with the ones currently waiting
@@ -87,6 +92,7 @@ io.on('connect', client => {
             client.peer.emit('peer-abandoned')
             client.peer.peer = null
             client.peer = null
+            console.log('[Socket.IO] User Abandoned peer')
         }
 
         waitingUsers = waitingUsers.filter(u => u.id != client.id)
@@ -95,11 +101,15 @@ io.on('connect', client => {
 
     client.on('disconnect', () => {
 
+        clientCount -= 1
+        console.log(`[Socket.IO] User Disconnected [${clientCount}]`)
+
         if(client.peer){
             // Tell the user that the paired user has disconnected
             client.peer.emit('peer-lost')
             client.peer.peer = null
             client.peer = null
+            console.log('[Socket.IO] User lost connection to peer')
         }
 
         waitingUsers = waitingUsers.filter(u => u.id != client.id)
@@ -110,6 +120,7 @@ io.on('connect', client => {
 function tryPair(client){
     if (waitingUsers.length <= 0) {
         waitingUsers.push(client)
+        console.log('[Socket.IO] User started waiting for peer')
     } else {
 
         client.peer = waitingUsers[0]
@@ -121,6 +132,7 @@ function tryPair(client){
 
         // remove user from waiting list
         waitingUsers = waitingUsers.slice(1)
+        console.log('[Socket.IO] User started conversation with a new peer')
     }   
 }
 
