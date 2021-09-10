@@ -14,8 +14,11 @@
         }
     ],
     "description": "Conversar anonimamente, livremente",
-    "lang": "en",
+    "lang": "pt",
     "categories": [
         "Social"
+    ],
+    "app_domains" : [
+        "agnos.herokuapp.com"
     ]
 }
