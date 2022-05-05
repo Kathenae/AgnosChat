@@ -1,5 +1,5 @@
-# Noface
-A simple messaging app using socket.io for realtime communication with no extra encryption besides whatever socket.io is using
+# AgnosChat
+A simple messaging app using socket.io for realtime communication and express as the back-end server
 
 ## TODO
 - [x] send text messages
